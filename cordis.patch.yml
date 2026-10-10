@@ -1,0 +1,6 @@
+- insert:
+    - id: local-poker
+      name: '@dsh-local/poker'
+      config:
+        upstreamUrl: ''
+        requestTimeoutMs: 10000

@@ -1,0 +1,192 @@
+{
+  "tableID": "friends",
+  "phase": "playing",
+  "seats": [
+    {
+      "userID": 1,
+      "position": 0,
+      "username": "Ada",
+      "avatarURL": "/poker/account/avatars/1"
+    },
+    {
+      "userID": 2,
+      "position": 1,
+      "username": "Bo",
+      "avatarURL": null
+    },
+    {
+      "userID": 3,
+      "position": 2,
+      "username": null,
+      "avatarURL": null
+    },
+    {
+      "userID": 4,
+      "position": 3,
+      "username": "Dana",
+      "avatarURL": null
+    }
+  ],
+  "wallet": {
+    "balance_per_chip": "0.01",
+    "version": 5,
+    "stacks": [
+      {
+        "user_id": 1,
+        "chips": 1000
+      },
+      {
+        "user_id": 2,
+        "chips": 1000
+      },
+      {
+        "user_id": 3,
+        "chips": 1000
+      },
+      {
+        "user_id": 4,
+        "chips": 1000
+      }
+    ]
+  },
+  "turn": {
+    "userID": 4,
+    "revision": 0,
+    "deadlineAt": "2026-09-21T12:00:30.000Z"
+  },
+  "hand": {
+    "tableID": "friends",
+    "handID": "fixture-hand",
+    "revision": 0,
+    "table": {
+      "schemaVersion": 1,
+      "config": {
+        "smallBlind": 5,
+        "bigBlind": 10,
+        "ante": {
+          "mode": "none",
+          "amount": 0
+        },
+        "maxSeats": 4,
+        "minBuyIn": 1,
+        "maxBuyIn": null
+      },
+      "seats": [
+        {
+          "playerId": "1",
+          "stack": 1000,
+          "status": "active"
+        },
+        {
+          "playerId": "2",
+          "stack": 995,
+          "status": "active"
+        },
+        {
+          "playerId": "3",
+          "stack": 990,
+          "status": "active"
+        },
+        {
+          "playerId": "4",
+          "stack": 1000,
+          "status": "active"
+        }
+      ],
+      "buttonSeat": 0,
+      "handNumber": 1,
+      "hand": {
+        "handNumber": 1,
+        "stage": "preflop",
+        "completionReason": null,
+        "buttonSeat": 0,
+        "smallBlindSeat": 1,
+        "bigBlindSeat": 2,
+        "currentActorSeat": 3,
+        "currentBet": 10,
+        "lastFullRaiseSize": 10,
+        "communityCards": [],
+        "players": [
+          {
+            "playerId": "1",
+            "seat": 0,
+            "holeCards": null,
+            "folded": false,
+            "allIn": false,
+            "committedStreet": 0,
+            "committedHand": 0,
+            "lastActedBet": null,
+            "handRank": null
+          },
+          {
+            "playerId": "2",
+            "seat": 1,
+            "holeCards": null,
+            "folded": false,
+            "allIn": false,
+            "committedStreet": 5,
+            "committedHand": 5,
+            "lastActedBet": null,
+            "handRank": null
+          },
+          {
+            "playerId": "3",
+            "seat": 2,
+            "holeCards": null,
+            "folded": false,
+            "allIn": false,
+            "committedStreet": 10,
+            "committedHand": 10,
+            "lastActedBet": null,
+            "handRank": null
+          },
+          {
+            "playerId": "4",
+            "seat": 3,
+            "holeCards": [
+              {
+                "rank": "8",
+                "suit": "c"
+              },
+              {
+                "rank": "A",
+                "suit": "h"
+              }
+            ],
+            "folded": false,
+            "allIn": false,
+            "committedStreet": 0,
+            "committedHand": 0,
+            "lastActedBet": null,
+            "handRank": null
+          }
+        ],
+        "pots": [
+          {
+            "amount": 10,
+            "eligiblePlayerIds": [
+              "2",
+              "3"
+            ],
+            "winnerPlayerIds": [],
+            "awards": []
+          }
+        ]
+      }
+    },
+    "legalActions": [
+      {
+        "kind": "fold"
+      },
+      {
+        "kind": "call",
+        "amount": 10
+      },
+      {
+        "kind": "raise-to",
+        "minAmount": 20,
+        "maxAmount": 1000
+      }
+    ]
+  }
+}
