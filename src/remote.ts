@@ -1,5 +1,6 @@
 /** Identical RPC validators used by the Host and the browser. */
 import { z } from 'zod'
+import { descriptors as updateDescriptors } from './update/remote.ts'
 const name = '@dsh-local/poker'
 export const serviceUrl = z.string().max(2048).refine(value => {
   if (value === '') return true
@@ -24,5 +25,5 @@ const descriptors = declarations.map(([method, parameters, result, mode]) => ({
   parameters:parameters.map(([parameter, schema]) => ({name:parameter,wire:parameter,source:'json',codec:{mode:'strict',typeSymbol:`${name}#${method}:${parameter}`,create:()=>schema}})),
   cancellation:{parameter:'signal'},result:{mode:'strict',typeSymbol:`${name}#${method}:result`,create:()=>result},
 }))
-export const TYPERT = {package:name,face:'host',schemas:[],invocations:descriptors,model:{services:[],events:[],objects:[]}}
-export const TYPERT_REMOTE = {package:name,descriptors}
+export const TYPERT = {package:name,face:'host',schemas:[],invocations:[...descriptors, ...updateDescriptors],model:{services:[],events:[],objects:[]}}
+export const TYPERT_REMOTE = {package:name,descriptors:[...descriptors, ...updateDescriptors]}

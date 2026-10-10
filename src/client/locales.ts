@@ -1,5 +1,7 @@
 /** Locale-owned poker copy shared by the lobby, table and action controls. */
+import { updateZh, updateEn } from '../update/locales.ts'
 export const zh = {
+  ...updateZh,
   serviceTitle: '牌桌服务',
   chooseService: '选择同一局域网中的服务',
   serviceSettings: '连接设置',
@@ -156,6 +158,7 @@ export const zh = {
 export type PokerKey = keyof typeof zh
 /** English counterpart of every visible label. */
 export const en: Record<PokerKey, string> = {
+  ...updateEn,
   balanceRefreshFailed: 'Balance could not be refreshed. Close and reopen the table to refresh it. This does not mean a buy-in or return failed; do not repeat the transfer.',
   serviceTitle: 'Table service',
   chooseService: 'Choose a service on your local network',

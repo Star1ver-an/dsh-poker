@@ -6,10 +6,13 @@ import type { createPokerStore } from './stores.ts'
 import type { PokerKey } from './locales.ts'
 import type { Activity, CardView, PokerAction, RoomView, SeatView } from './protocol.ts'
 import css from './PokerPanel.module.css'
+import { UpdatePanel } from '../update/UpdatePanel.tsx'
+import type { UpdateClient } from '../update/client.ts'
 import { ServiceSettings, type Sharing, type DiscoveredService } from './ServiceSettings.tsx'
 
 /** Plain callbacks and a framework-bound poker observable. */
 export interface PokerInjected {
+  updates: UpdateClient
   loadAvatar: (url: string, signal: AbortSignal) => Promise<string>
   endpoint: () => Promise<string>
   discover: (signal: AbortSignal) => Promise<DiscoveredService[]>
@@ -393,6 +396,9 @@ export function PokerPanel(props: PokerPanelProps) {
     props
   const open = useStore(s => s.open)
   const state = usePoker(s => s)
+  useEffect(() => {
+    props.updates.safety(Boolean(state.room) || state.busy || state.pending || state.status === 'offline' || state.status === 'connecting', open)
+  }, [props.updates, state.room, state.busy, state.pending, state.status, open])
   const dialog = useRef<HTMLDialogElement>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -555,6 +561,7 @@ export function PokerPanel(props: PokerPanelProps) {
           )}
         </div>
         {open && <ServiceSettings api={props} t={t} locked={Boolean(account) || state.busy} />}
+        <UpdatePanel client={props.updates} t={t} />
         {state.status === 'offline' && (
           <div role="status" className={css.notice}>
             {t('reconnect')}

@@ -9,11 +9,12 @@ import WebSocket from 'ws'
 import { serviceUrl, servicePath } from './remote.ts'
 import { advertise, discover, loopbackService, probe } from './discovery.ts'
 import { gateway } from './gateway.ts'
+import { PluginUpdater } from './update/host.ts'
 
 const settings = defineDomain({name:'local_poker',version:1,layout:'per-record',tables:{settings:domainTable(z.string())}})
 export const inject = ['typert','storageDomain']
 export const Config = s.object({upstreamUrl:s.string().default(''),requestTimeoutMs:s.number().min(1000).max(30000).default(10000),sharePort:s.number().min(1024).max(65535).default(41890)})
-export function apply(ctx, config) { ctx.plugin(PokerBridge, config) }
+export function apply(ctx, config) { ctx.plugin(PokerBridge, config); ctx.plugin(PluginUpdater) }
 
 export class PokerBridge extends TypertRemoteService {
   static inject = ['typert','storageDomain']

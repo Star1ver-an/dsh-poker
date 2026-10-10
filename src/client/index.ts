@@ -10,11 +10,12 @@ import { PokerPanel, PokerTrigger, type PokerInjected } from './PokerPanel.tsx'
 import { createPokerStore } from './stores.ts'
 import { en, zh, type PokerKey } from './locales.ts'
 import { desktopPorts, unwrap } from './desktop-ports.ts'
+import { UpdateClient } from '../update/client.ts'
 
 /** Browser loader configuration schema. */
 export const Config = configSchema.default(configSchema.parse({}))
 /** Services used by the poker slot registrations. */
-export const inject = ['slots', 'locale', 'remote', 'remote.pokerBridge']
+export const inject = ['slots', 'locale', 'remote', 'remote.pokerBridge', 'remote.pokerUpdates']
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Private poker table copy. */ poker: PokerKey
@@ -27,6 +28,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export function apply(ctx: Context, input: Partial<PokerConfig> = {}): void {
   const config = configSchema.parse(input)
   const client = new PokerClient(config, desktopPorts(ctx.remote.pokerBridge))
+  const updates = new UpdateClient(ctx.remote.pokerUpdates)
+  ctx.effect(() => updates.start(), 'poker: update status')
+  void client.restore()
   ctx.effect(
     () => () => {
       client.dispose()
@@ -37,6 +41,7 @@ export function apply(ctx: Context, input: Partial<PokerConfig> = {}): void {
   const store = createPokerStore()
   const loadAvatar = (url: string, signal: AbortSignal) => unwrap(ctx.remote.pokerBridge.avatar(new URL(url,'https://dsh-poker.invalid').pathname.replace(/^\/poker/,''),signal))
   const face = (): PokerInjected => ({
+    updates,
     loadAvatar,
     endpoint: () => unwrap(ctx.remote.pokerBridge.endpoint()),
     discover: signal => unwrap(ctx.remote.pokerBridge.discover(signal)),
