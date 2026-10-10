@@ -1,6 +1,6 @@
 {
   "name": "@dsh-local/poker",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "德州扑克客户端，支持 DSH Desktop 的服务连接与实时牌桌",
   "type": "module",
   "license": "MIT",

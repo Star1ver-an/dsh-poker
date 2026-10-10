@@ -238,15 +238,6 @@
   opacity: 0.68;
   pointer-events: none;
 }
-.tableStamp {
-  position: absolute;
-  bottom: 31px;
-  width: 100%;
-  text-align: center;
-  color: #82968e;
-  letter-spacing: 4px;
-  font-size: 9px;
-}
 .board {
   position: absolute;
   inset: 0;
@@ -1385,7 +1376,19 @@
 .serviceConfig p { flex-basis: 100%; margin: 0; }
 
 /* Desktop windows have a bounded height; only the body scrolls, never the close control. */
-.dialog { width: min(1160px, calc(100vw - 24px)); height: calc(100dvh - 24px); max-height: 920px; border-radius: 16px; overflow: hidden; box-sizing: border-box; }
+.dialog {
+  /* Native caption buttons sit above the dialog top layer in Desktop. */
+  --caption-clearance: max(48px, var(--dsh-frame-top-clearance, 0px), calc(var(--dsh-windows-titlebar-height, 0px) + 8px));
+  top: 0;
+  bottom: auto;
+  margin: var(--caption-clearance) auto 12px;
+  width: min(1160px, calc(100vw - 24px));
+  height: calc(100dvh - var(--caption-clearance) - 12px);
+  max-height: 920px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 .page { height: 100%; min-height: 0; padding: 0; display: flex; flex-direction: column; }
 .header { flex: 0 0 auto; height: 58px; padding: 0 20px; gap: 12px; }
 .headerRight { gap: 12px; min-width: 0; }
@@ -1458,7 +1461,7 @@
   .handRow .eyebrow { display: none; }
 }
 @media (max-width: 560px) {
-  .dialog { width: calc(100vw - 8px); height: calc(100dvh - 8px); border-radius: 10px; }
+  .dialog { width: calc(100vw - 8px); border-radius: 10px; }
   .header { padding-inline: 10px; height: 52px; }
   .scrollArea { padding: 0 10px 12px; }
   .identityName { max-width: 72px; }
@@ -1475,11 +1478,23 @@
   .seat .avatar { width: 28px; height: 28px; }
   .seat .selfMark { display: none; }
   .tableSurface { inset-inline: 20px; }
-  .tableStamp { display: none; }
   .card, .cardBack, .placeholder { width: 32px; height: 46px; }
   .card b { font-size: 12px; }
   .card > span { font-size: 18px; }
   .community { gap: 4px; }
   .tableArea { margin-bottom: 18px; }
   .serviceSummary { flex-wrap: wrap; }
+}
+
+/* Keep the stage and self portrait outside each other's reserved space. */
+.pot { flex-wrap: wrap; justify-content: center; gap: 6px 10px; }
+.pot > .street { font-size: 11px; letter-spacing: 0; border-left: 1px solid var(--line); padding-left: 10px; }
+.seat0[data-self='true'] { width: 176px; display: grid; grid-template-columns: 38px minmax(0, 1fr); column-gap: 8px; }
+.seat0[data-self='true'] .avatar { grid-column: 1; grid-row: 1; }
+.seat0[data-self='true'] .seatInfo { grid-column: 2; grid-row: 1; min-width: 0; max-width: none; margin-top: 0; }
+.seat0[data-self='true'] .seatStatus { grid-column: 1 / -1; }
+.seat0[data-self='true'] .wager { left: 50%; transform: translateX(-50%); }
+@media (max-width: 560px) {
+  .seat0[data-self='true'] { width: 150px; grid-template-columns: 28px minmax(0, 1fr); }
+  .seat0[data-self='true'] .seatInfo b { max-width: 100px; }
 }

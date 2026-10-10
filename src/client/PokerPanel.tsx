@@ -580,14 +580,14 @@ export function PokerPanel(props: PokerPanelProps) {
           <main className={css.main}>
             <div className={css.tableArea} data-animate={Boolean(state.animate)}>
               <div className={css.tableSurface}>
-                <span className={css.tableStamp} aria-hidden="true">
-                  {t('stamp')}
-                </span>
                 <div className={css.board}>
                   <div className={css.pot} key={`${room?.hand?.handID}:${pot}`}>
                     <span>{t('pot')}</span>
                     <strong>{format(pot)}</strong>
                     <small>{t('chips')}</small>
+                    <span className={css.street}>
+                      {room?.phase === 'funds-pending' ? t('settling') : hand ? t(hand.stage) : t('waiting')}
+                    </span>
                   </div>
                   <div className={css.community} aria-label={t('community')}>
                     {Array.from({ length: 5 }, (_, i) => (
@@ -602,9 +602,6 @@ export function PokerPanel(props: PokerPanelProps) {
                         )}
                       </div>
                     ))}
-                  </div>
-                  <div className={css.street}>
-                    {room?.phase === 'funds-pending' ? t('settling') : hand ? t(hand.stage) : t('waiting')}
                   </div>
                 </div>
               </div>
