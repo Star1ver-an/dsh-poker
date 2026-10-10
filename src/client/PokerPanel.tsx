@@ -35,6 +35,7 @@ export type PokerPanelProps = PropsRuntime<'shell.overlay'> & Shares
 const format = (value: number) => value.toLocaleString('en-US')
 /** Relay error codes the panel can explain in the reader's language. */
 const errorKeys: Record<string, PokerKey> = {
+  BALANCE_REFRESH_FAILED: 'balanceRefreshFailed',
   POKER_NOT_CONFIGURED: 'notConfigured',
   CREDENTIALS_INVALID: 'credentialsInvalid',
   ACCOUNT_DISABLED: 'accountDisabled',

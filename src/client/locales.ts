@@ -133,6 +133,7 @@ export const zh = {
   captchaRequired: '本站开启了人机验证，请完成验证后重试。',
   captchaUnsupported: '本站使用腾讯或阿里云验证码，请先在中转站登录后再试。',
   accountUnavailable: '中转站暂时不可用，请稍后重试。',
+  balanceRefreshFailed: '余额暂时无法更新，请收起并重新打开牌桌。余额刷新失败不代表买入或返还失败，请勿重复提交交易。',
   accountRejected: '登录被拒绝，请检查填写的信息。',
   codeInvalid: '验证码不正确，请重新输入。',
   challengeExpired: '验证已过期，请重新登录。',
@@ -155,6 +156,7 @@ export const zh = {
 export type PokerKey = keyof typeof zh
 /** English counterpart of every visible label. */
 export const en: Record<PokerKey, string> = {
+  balanceRefreshFailed: 'Balance could not be refreshed. Close and reopen the table to refresh it. This does not mean a buy-in or return failed; do not repeat the transfer.',
   serviceTitle: 'Table service',
   chooseService: 'Choose a service on your local network',
   serviceSettings: 'Connection settings',

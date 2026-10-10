@@ -90,7 +90,7 @@ function bench({ session = account, seatless = false, login = 'complete' }: {
     uuid: () => 'unique-command',
   })
   owned.push(client)
-  return { client, sockets, calls, failures, recovery }
+  return { client, sockets, calls, failures, recovery, fetcher }
 }
 function frame(revision = 0) {
   return {
@@ -209,4 +209,72 @@ it('restores the original funds intent after a refreshed page', async () => {
   const request = b.calls.find(call => call.body)
   expect(JSON.parse(request!.body!)).toEqual({ operationID: 'original-buy', amount: '12.50' })
   expect(b.client.getSnapshot().pending).toBe(false)
+})
+
+it.each(['buy-in', 'leave'] as const)('refreshes the relay balance after a confirmed %s', async kind => {
+  const b = bench()
+  await b.client.restore()
+  const request = b.fetcher.getMockImplementation()!
+  b.fetcher.mockImplementation(async (input, init) =>
+    String(input).endsWith('/account/me')
+      ? Response.json({ data: { ...account, balance: kind === 'leave' ? '52.5' : '32.5' } })
+      : request(input, init))
+  await b.client.fund(kind, kind === 'buy-in' ? '10.00' : undefined)
+  expect(b.client.getSnapshot().account?.balance).toBe(kind === 'leave' ? '52.5' : '32.5')
+  expect(b.client.getSnapshot().pending).toBe(false)
+  expect(b.client.getSnapshot().error).toBeNull()
+  if (kind === 'leave') expect(b.client.getSnapshot().room).toBeNull()
+  await b.client.retry()
+  expect(b.calls.filter(call => call.body)).toHaveLength(1)
+})
+
+it('a failed balance read does not repeat a completed return and reopening only refreshes the profile', async () => {
+  const b = bench()
+  await b.client.restore()
+  const request = b.fetcher.getMockImplementation()!
+  let offline = true
+  b.fetcher.mockImplementation(async (input, init) => {
+    if (String(input).endsWith('/account/me')) {
+      if (offline) throw new Error('Profile unavailable')
+      return Response.json({ data: { ...account, balance: '52.5' } })
+    }
+    return request(input, init)
+  })
+  await b.client.fund('leave')
+  expect(b.client.getSnapshot()).toMatchObject({ room: null, pending: false, busy: false, status: 'live', error: 'BALANCE_REFRESH_FAILED' })
+  expect(b.client.getSnapshot().account?.balance).toBeNull()
+  await b.client.retry()
+  offline = false
+  await b.client.restore()
+  expect(b.client.getSnapshot().account?.balance).toBe('52.5')
+  expect(b.client.getSnapshot().error).toBeNull()
+  expect(b.sockets).toHaveLength(1)
+  expect(b.calls.filter(call => call.body)).toHaveLength(1)
+})
+
+it.each(['pending', 'rejected'] as const)('does not present an unconfirmed %s return as completed', async outcome => {
+  const b = bench()
+  await b.client.restore()
+  b.failures.push(outcome)
+  await b.client.fund('leave')
+  expect(b.client.getSnapshot().room).not.toBeNull()
+  expect(b.client.getSnapshot().account?.balance).toBe(account.balance)
+  expect(b.calls.filter(call => call.path.endsWith('/account/me'))).toHaveLength(1)
+})
+
+it('does not restore an account from a delayed balance response after disconnect', async () => {
+  const b = bench()
+  await b.client.restore()
+  const request = b.fetcher.getMockImplementation()!
+  let resolveProfile!: (response: Response) => void
+  b.fetcher.mockImplementation(async (input, init) =>
+    String(input).endsWith('/account/me')
+      ? new Promise<Response>(resolve => { resolveProfile = resolve })
+      : request(input, init))
+  const transfer = b.client.fund('leave')
+  await vi.waitFor(() => expect(resolveProfile).toBeTypeOf('function'))
+  b.client.disconnect()
+  resolveProfile(Response.json({ data: { ...account, balance: '52.5' } }))
+  await transfer
+  expect(b.client.getSnapshot()).toMatchObject({ account: null, status: 'signed-out', pending: false, busy: false })
 })

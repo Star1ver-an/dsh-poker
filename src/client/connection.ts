@@ -214,8 +214,18 @@ export class PokerClient {
   }
   /** Restore a persisted browser session after a reload or a reopened panel. */
   async restore(): Promise<void> {
-    if (this.#state.busy || this.#state.status === 'live') return
+    if (this.#state.busy) return
     const generation = this.#generation
+    if (this.#state.status === 'live') {
+      if (this.#state.pending) return
+      this.#publish({ busy: true })
+      try {
+        await this.#refreshBalance(generation)
+      } finally {
+        if (generation === this.#generation) this.#publish({ busy: false })
+      }
+      return
+    }
     this.#publish({ busy: true })
     try {
       await this.#configure()
@@ -229,6 +239,26 @@ export class PokerClient {
       else this.#fail(error)
     } finally {
       if (generation === this.#generation) this.#publish({ busy: false })
+    }
+  }
+  /** A profile read must never turn a confirmed funds transfer into a retryable transfer. */
+  async #refreshBalance(generation: number): Promise<void> {
+    const userID = this.#state.account?.userID
+    if (userID === undefined) return
+    try {
+      const account = accountSchema.parse(await this.#service('/account/me'))
+      if (generation !== this.#generation || this.#state.account?.userID !== userID) return
+      if (account.userID !== userID) throw new Error('Account changed during balance refresh')
+      this.#publish({
+        account: { ...this.#state.account, balance: account.balance },
+        ...(this.#state.error === 'BALANCE_REFRESH_FAILED' ? { error: null, detail: null } : {}),
+      })
+    } catch {
+      if (generation !== this.#generation || this.#state.account?.userID !== userID) return
+      this.#publish({
+        account: { ...this.#state.account, balance: null },
+        ...(this.#state.error === null ? { error: 'BALANCE_REFRESH_FAILED', detail: null } : {}),
+      })
     }
   }
   /** Pick a room from the configured set; a seated player must leave first.
@@ -399,11 +429,18 @@ export class PokerClient {
       }
       this.#pending = undefined
       this.#publish({ pending: false })
+      if ((pending.kind === 'buy-in' || pending.kind === 'leave') && this.#state.account)
+        this.#publish({ account: { ...this.#state.account, balance: null } })
       if (pending.kind === 'leave') {
         this.#stopSocket()
         this.#cursor = undefined
         this.#publish({ room: null, activity: [], status: 'live' })
+        await this.#refreshBalance(generation)
         return
+      }
+      if (pending.kind === 'buy-in') {
+        await this.#refreshBalance(generation)
+        if (generation !== this.#generation) return
       }
       const room = this.#project(roomSchema.parse(await this.#room('')))
       if (generation !== this.#generation) return

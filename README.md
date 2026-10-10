@@ -10,20 +10,24 @@
 2. 打开左侧「插件」→ 安装，在包地址输入框粘贴：
 
 ```text
-https://github.com/Star1ver-an/dsh-poker/releases/download/v0.2.1/dsh-local-poker-0.2.1.tgz
+https://github.com/Star1ver-an/dsh-poker/releases/download/v0.2.2/dsh-local-poker-0.2.2.tgz
 ```
 
 3. 安装并启用；如果提示重启，从「应用 → 退出」完全退出，再打开 DSH。左下角会出现「德州扑克」。
 
-若设备不能直接下载 GitHub Release，可先从 [Releases](https://github.com/Star1ver-an/dsh-poker/releases/tag/v0.2.1) 下载 tgz，再把它的**本机绝对路径**粘贴到安装输入框。也支持从 GitHub 标签安装：
+若设备不能直接下载 GitHub Release，可先从 [Releases](https://github.com/Star1ver-an/dsh-poker/releases/tag/v0.2.2) 下载 tgz，再把它的**本机绝对路径**粘贴到安装输入框。也支持从 GitHub 标签安装：
 
 ```text
-github:Star1ver-an/dsh-poker#v0.2.1
+github:Star1ver-an/dsh-poker#v0.2.2
 ```
 
 仓库和安装包已包含构建后的 `lib/`，安装无需 Node.js 开发环境，也无需执行构建脚本。另一个插件见 [局域网好友聊天](https://github.com/Star1ver-an/dsh-lan-chat)，两者互不依赖。个人数据和服务地址不包含在仓库或安装包中。
 
-## 本次界面修复
+## 本次余额刷新修复
+
+买入或离桌返还确认完成后，自动重新读取中转站余额；再次打开牌桌也会刷新余额。读取失败时隐藏旧余额并提示重新打开，不会把已完成的返还变为待重试交易。
+
+## 界面适配
 
 修复牌桌阶段文字与自己的头像、座位重叠：阶段显示在底池旁，自己的座位采用横向布局。窗口顶部预留原生标题栏空间，避免 DSH 的最小化、最大化和关闭按钮遮挡牌桌；窄窗口也保留这段安全距离。
 
