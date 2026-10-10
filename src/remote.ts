@@ -8,7 +8,10 @@ export const serviceUrl = z.string().max(2048).refine(value => {
 export const servicePath = z.string().max(2048).regex(/^\/(?:account|rooms|avatars)(?:\/[A-Za-z0-9_%.-]+)*$/).refine(path => {try{return !decodeURIComponent(path).split('/').some(p => p === '..' || p === '.')}catch{return false}})
 const table = z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/)
 const frame = z.discriminatedUnion('type', [z.object({type:z.literal('open')}),z.object({type:z.literal('message'),data:z.string()}),z.object({type:z.literal('close'),code:z.number()})])
+const sharing = z.object({enabled:z.boolean(), canShare:z.boolean(), error:z.string(), urls:z.array(serviceUrl)})
 const declarations = [
+  ['discover', [], z.array(z.object({name:z.string(), url:serviceUrl}))],
+  ['sharing', [], sharing], ['setSharing', [['enabled', z.boolean()]], sharing],
   ['endpoint', [], z.string()], ['configure', [['url', serviceUrl]], z.string()],
   ['avatar', [['path', servicePath]], z.string()],
   ['request', [['path', servicePath], ['body', z.string().max(2_000_000).nullable()]], z.object({status:z.number(),text:z.string()})],

@@ -6,11 +6,15 @@ import type { createPokerStore } from './stores.ts'
 import type { PokerKey } from './locales.ts'
 import type { Activity, CardView, PokerAction, RoomView, SeatView } from './protocol.ts'
 import css from './PokerPanel.module.css'
+import { ServiceSettings, type Sharing, type DiscoveredService } from './ServiceSettings.tsx'
 
 /** Plain callbacks and a framework-bound poker observable. */
 export interface PokerInjected {
   loadAvatar: (url: string, signal: AbortSignal) => Promise<string>
   endpoint: () => Promise<string>
+  discover: (signal: AbortSignal) => Promise<DiscoveredService[]>
+  sharing: () => Promise<Sharing>
+  setSharing: (enabled: boolean) => Promise<Sharing>
   configure: (url: string) => Promise<void>
   hooks: { poker: PokerClient }
   restore: () => Promise<void>
@@ -390,10 +394,6 @@ export function PokerPanel(props: PokerPanelProps) {
   const state = usePoker(s => s)
   const dialog = useRef<HTMLDialogElement>(null)
   const [email, setEmail] = useState('')
-  const [serviceUrl, setServiceUrl] = useState('')
-  const [serviceError, setServiceError] = useState('')
-  const [savingService, setSavingService] = useState(false)
-  useEffect(() => { if (open) void props.endpoint().then(setServiceUrl).catch(error => setServiceError(String(error))) }, [open])
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [captchaToken, setCaptchaToken] = useState('')
@@ -534,6 +534,7 @@ export function PokerPanel(props: PokerPanelProps) {
             </button>
           </div>
         </header>
+        <div className={css.scrollArea}>
         <div className={css.heading}>
           <div>
             <div className={css.eyebrow}>{room ? state.tableID : t('trigger')}</div>
@@ -552,15 +553,7 @@ export function PokerPanel(props: PokerPanelProps) {
             </div>
           )}
         </div>
-        {!account && <form className={css.serviceConfig} onSubmit={event => {
-          event.preventDefault(); setSavingService(true); setServiceError('')
-          void props.configure(serviceUrl.trim()).catch(error => setServiceError(String(error))).finally(()=>setSavingService(false))
-        }}>
-          <label>{t('serviceAddress')} <input aria-label={t('serviceAddress')} value={serviceUrl} onChange={event=>setServiceUrl(event.target.value)} placeholder="https://example.com/poker" /></label>
-          <button type="submit" disabled={savingService || state.busy}>{t('saveService')}</button>
-          <p>{t('serviceHint')}</p>
-          {serviceError && <p role="alert">{serviceError}</p>}
-        </form>}
+        {open && <ServiceSettings api={props} t={t} locked={Boolean(account) || state.busy} />}
         {state.status === 'offline' && (
           <div role="status" className={css.notice}>
             {t('reconnect')}
@@ -1012,11 +1005,10 @@ export function PokerPanel(props: PokerPanelProps) {
                 </button>
               </section>
             )}
-            <section className={css.activity}>
-              <h2>
+            <details className={css.activity}>
+              <summary>
                 {t('activity')}
-                <span aria-hidden="true">↗</span>
-              </h2>
+              </summary>
               {activity.length ? (
                 <ol>
                   {activity
@@ -1036,7 +1028,7 @@ export function PokerPanel(props: PokerPanelProps) {
                   <p>{t('activityHint')}</p>
                 </div>
               )}
-            </section>
+            </details>
             <div className={css.footnote}>{t('connectionTip')}</div>
             {account && (
               <button
@@ -1051,6 +1043,7 @@ export function PokerPanel(props: PokerPanelProps) {
               </button>
             )}
           </aside>
+        </div>
         </div>
       </div>
     </dialog>

@@ -39,6 +39,9 @@ export function apply(ctx: Context, input: Partial<PokerConfig> = {}): void {
   const face = (): PokerInjected => ({
     loadAvatar,
     endpoint: () => unwrap(ctx.remote.pokerBridge.endpoint()),
+    discover: signal => unwrap(ctx.remote.pokerBridge.discover(signal)),
+    sharing: () => unwrap(ctx.remote.pokerBridge.sharing()),
+    setSharing: enabled => unwrap(ctx.remote.pokerBridge.setSharing(enabled)),
     configure: async url => { await unwrap(ctx.remote.pokerBridge.configure(url)); client.resetService(); await client.restore() },
     hooks: { poker: client },
     restore: () => client.restore(),

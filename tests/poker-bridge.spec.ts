@@ -1,10 +1,11 @@
-import {afterEach, beforeEach, expect, it} from 'vitest'
+import {afterEach, beforeEach, expect, it, vi} from 'vitest'
 import {createServer} from 'node:http'
 import {WebSocketServer} from 'ws'
 import {Context} from '@deepseek-ai/cordis'
 import Storage from '@deepseek-ai/dsh-storage'
 import {DomainFacility} from '@deepseek-ai/dsh-storage-domain'
 import {PokerBridge} from '../src/index.ts'
+import * as discovery from '../src/discovery.ts'
 import {serviceUrl,servicePath} from '../src/remote.ts'
 import {MemoryMediaPool,MemoryStorageBackend} from './helpers/memory-backend.ts'
 
@@ -14,6 +15,7 @@ beforeEach(async()=>{
   cookies=[];commands=[];socketCookie=''
   server=createServer((req,res)=>{
     cookies.push(req.headers.cookie ?? '')
+    if(req.url==='/poker/account/config'){res.end(JSON.stringify({data:{tables:['friends'],captcha:{provider:'none'}}}));return}
     if(req.url==='/poker/account/login')res.setHeader('Set-Cookie','test-session=private; HttpOnly; Path=/poker; SameSite=Strict')
     if(req.url==='/poker/account/avatars/1'){res.setHeader('Content-Type','image/png');res.end(Buffer.from([137,80,78,71]));return}
     if(req.url==='/poker/account/redirect'){res.writeHead(302,{Location:'/unexpected'});res.end();return}
@@ -34,7 +36,7 @@ beforeEach(async()=>{
   bridge=(ctx as any).pokerBridge
 })
 afterEach(async()=>{
-  await ctx?.fiber.dispose()
+  await ctx?.fiber.dispose(); vi.restoreAllMocks()
   for(const client of ws?.clients ?? [])client.terminate()
   ws?.close();server?.closeAllConnections();await new Promise<void>(resolve=>server?.close(()=>resolve()))
 })
@@ -81,4 +83,22 @@ it('disabling the plugin closes a live socket and clears authentication',async()
   await ctx.fiber.dispose();await frames.next();await frames.return(undefined)
   expect(bridge.sockets.size).toBe(0)
   expect(await bridge.jar.getCookieString(base)).toBe('')
+})
+
+it('persists host sharing, rejects self-connections, and closes its gateway on service change',async()=>{
+  const close=vi.fn(async()=>{})
+  vi.spyOn(discovery,'advertise').mockResolvedValue({port:41889,error:'',close})
+  bridge.config.sharePort=0
+  await bridge.configure(base)
+  expect((await bridge.setSharing(true)).enabled).toBe(true)
+  expect(await bridge.table.get('sharing')).toBe('true')
+  const shared=bridge.gateway.url
+  expect((await fetch(shared+'/account/config')).status).toBe(200)
+  await expect(bridge.configure(shared)).rejects.toThrow('own sharing address')
+  await bridge.configure('http://192.168.1.20:41890')
+  expect(bridge.sharing()).toMatchObject({enabled:false,canShare:false,urls:[]})
+  expect(close).toHaveBeenCalledOnce()
+  expect(await bridge.table.get('sharing')).toBe('false')
+  await expect(fetch(shared+'/account/config')).rejects.toThrow()
+  await expect(bridge.setSharing(true)).rejects.toThrow('Only a local backend')
 })

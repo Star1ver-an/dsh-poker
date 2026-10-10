@@ -7,21 +7,29 @@ import { z } from 'zod'
 import { CookieJar } from 'tough-cookie'
 import WebSocket from 'ws'
 import { serviceUrl, servicePath } from './remote.ts'
+import { advertise, discover, loopbackService, probe } from './discovery.ts'
+import { gateway } from './gateway.ts'
 
 const settings = defineDomain({name:'local_poker',version:1,layout:'per-record',tables:{settings:domainTable(z.string())}})
 export const inject = ['typert','storageDomain']
-export const Config = s.object({upstreamUrl:s.string().default(''),requestTimeoutMs:s.number().min(1000).max(30000).default(10000)})
+export const Config = s.object({upstreamUrl:s.string().default(''),requestTimeoutMs:s.number().min(1000).max(30000).default(10000),sharePort:s.number().min(1024).max(65535).default(41890)})
 export function apply(ctx, config) { ctx.plugin(PokerBridge, config) }
 
 export class PokerBridge extends TypertRemoteService {
   static inject = ['typert','storageDomain']
   config; jar = new CookieJar(); sockets = new Map(); aborts = new Set(); domain; table; upstream = ''
+  advertiser; gateway; sharingError = ''; disposed = false; sharingChange = false
   constructor(ctx, config) { super(ctx,'pokerBridge'); this.config = config }
   async [Service.init]() {
     this.domain = await this.ctx.storageDomain.open(settings)
     this.table = this.domain.table('settings')
     this.upstream = serviceUrl.parse(this.config.upstreamUrl || await this.table.get('upstreamUrl') || '')
+    if (await this.table.get('sharing') === 'true' && loopbackService(this.upstream)) {
+      try { await this.startSharing() } catch (error) { this.sharingError = String(error) }
+    }
     this.ctx.effect(() => async () => {
+      this.disposed = true
+      await this.advertiser?.close(); await this.gateway?.close()
       for (const abort of this.aborts) abort.abort()
       for (const socket of this.sockets.values()) socket.terminate()
       this.sockets.clear(); await this.jar.removeAllCookies(); await this.domain.close()
@@ -30,9 +38,54 @@ export class PokerBridge extends TypertRemoteService {
   @Remote
   endpoint() { return this.upstream }
   @Remote
+  sharing() { return {enabled:Boolean(this.advertiser), canShare:loopbackService(this.upstream), error:this.sharingError || this.advertiser?.error || '', urls:this.gateway?.urls ?? []} }
+  async startSharing() {
+    const entry = await gateway(this.upstream, this.config.sharePort)
+    try {
+      const responder = await advertise(entry.url)
+      if (this.disposed) { await responder.close(); throw new Error('Plugin stopped') }
+      this.gateway = entry; this.advertiser = responder
+    } catch (error) { await entry.close(); throw error }
+  }
+  @Remote
+  async setSharing(enabled) {
+    if (this.sharingChange) throw new Error('Sharing settings are being updated')
+    this.sharingChange = true
+    try {
+      if (enabled && !loopbackService(this.upstream)) throw new Error('Only a local backend can be shared')
+      await this.advertiser?.close(); await this.gateway?.close(); this.advertiser = undefined; this.gateway = undefined; this.sharingError = ''
+      if (enabled) {
+        await probe(this.upstream)
+        await this.startSharing()
+      }
+      await this.table.put('sharing', String(enabled))
+      return this.sharing()
+    } finally { this.sharingChange = false }
+  }
+  @Remote
+  async discover(signal) {
+    const abort = new AbortController(); this.aborts.add(abort)
+    const cancel = () => abort.abort(); signal?.addEventListener('abort', cancel, {once:true})
+    if (signal?.aborted) abort.abort()
+    try {
+      const candidates = await discover(abort.signal)
+      const checked = await Promise.all(candidates.map(async item => {
+        if (this.gateway && [this.gateway.url, ...this.gateway.urls].includes(item.url)) return null
+        try { await probe(item.url, abort.signal); return item } catch { return null }
+      }))
+      return checked.filter(Boolean)
+    } finally { this.aborts.delete(abort); signal?.removeEventListener('abort', cancel) }
+  }
+  @Remote
   async configure(url) {
     const value = serviceUrl.parse(url).replace(/\/+$/, '')
+    if (this.gateway && [this.gateway.url, ...this.gateway.urls].includes(value)) throw new Error('This is your own sharing address; keep the local backend configured')
+    if (this.sharingChange) throw new Error('Sharing settings are being updated')
     if (this.sockets.size) throw new Error('Close the table and sign out before changing the service')
+    if (value !== this.upstream) {
+      await this.advertiser?.close(); await this.gateway?.close(); this.advertiser = undefined; this.gateway = undefined
+      await this.table.put('sharing', 'false')
+    }
     for (const abort of this.aborts) abort.abort()
     const previousJar = this.jar; this.jar = new CookieJar()
     await previousJar.removeAllCookies(); await this.table.put('upstreamUrl',value); this.upstream = value
