@@ -6,6 +6,6 @@
 .buttons { display: flex; gap: 6px; flex-wrap: wrap; }
 .buttons button { font: inherit; padding: 5px 10px; min-height: 32px; cursor: pointer; border: 1px solid var(--dsw-alias-border-l1, #dbe5e2); border-radius: 7px; background: var(--dsw-alias-bg-layer-2, #fff); color: inherit; }
 .buttons button:disabled { opacity: .5; cursor: default; }
-.option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.option input { width: 16px; height: 16px; min-height: 0; }
+.panel .content .option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.panel .content .option input[type='checkbox'] { appearance: auto; width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0; flex: 0 0 16px; border-radius: 3px; }
 .panel :focus-visible { outline: 2px solid #6a9f91; outline-offset: 2px; }
